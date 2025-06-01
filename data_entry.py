@@ -139,7 +139,9 @@ with st.form("edit_form"):
 
 # Missing fields prompt generator
 # Prompt generation
-missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k != "scheme_id" and k != "tags"]
+# Prompt generation
+missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k not in ("scheme_id", "tags")]
+
 prompt = f'''
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
 
@@ -159,20 +161,20 @@ Instructions:
 
 Format for each field (example for `objective`):
 
-{
+{{
   "objective": "• content\\n• more details"
-}
+}}
 
 ...repeat for each field...
 
 At the end, provide:
 
-{
+{{
   "sources": [
     "https://official-source-1",
     "https://official-source-2"
   ]
-}
+}}
 '''.strip()
 
 st.subheader("🤖 Copy Final Prompt + Scheme")
@@ -181,10 +183,4 @@ components.html(f"""
     <button onclick="navigator.clipboard.writeText(document.getElementById('fullPrompt').value); alert('Full prompt copied to clipboard!');">
         📋 Copy Prompt for ChatGPT
     </button>
-""", height=100)
-
-st.subheader("🔍 Fields with Missing Information")
-if missing_keys:
-    st.warning(f"Missing fields: {', '.join(missing_keys)}")
-else:
-    st.success("All fields are filled ✅")
+""", height=120)
