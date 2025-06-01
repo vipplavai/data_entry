@@ -2,4 +2,4 @@ streamlit
 pymongo
 pandas
 numpy
-statsmodels
+2nd
