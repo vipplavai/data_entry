@@ -75,7 +75,7 @@ st.title("📋 MSME Scheme Editor Tool")
 # =============================================================================
 # 4) Load Data from JSON (fallback) and/or MongoDB
 # =============================================================================
-data_file = Path("definitely_final.json")
+data_file = Path("/definitely_final.json")
 
 # 4.1) If MongoDB is empty, seed it from JSON once
 if schemes_coll.count_documents({}) == 0:
