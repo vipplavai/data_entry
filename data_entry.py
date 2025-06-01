@@ -138,7 +138,8 @@ with st.form("edit_form"):
             st.rerun()
 
 # Missing fields prompt generator
-missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k not in ("scheme_id", "tags")]
+# Prompt generation
+missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k != "scheme_id" and k != "tags"]
 prompt = f'''
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
 
@@ -146,31 +147,30 @@ Scheme Details:
 - scheme_id: "{scheme.get("scheme_id", "")}"
 - scheme_name: "{scheme.get("scheme_name", "")}"
 
-The following fields are missing and need to be filled individually and in detail:
+Instructions:
+- For each required field (`objective`, `eligibility`, `key_benefits`, `how_to_apply`, `required_documents`), return a separate JSON block with only that field filled.
+- Do not include the `sources` field in the individual JSON blocks.
+- After providing all the individual JSON blocks, provide a single JSON block at the end with the `sources` field listing all official URLs or PDF titles used for the entire scheme.
+- Use only official Indian government sources (e.g., ministry portals, india.gov.in, mygov.in, PIB, or official PDF guidelines).
+- Be detailed and specific. Use bullet points where helpful.
+- Do not include or generate the `tags` field.
+- Do not hallucinate or guess. Leave a field blank if no official info is found.
+- Output only the JSON blocks as specified, nothing else.
 
-{chr(10).join([f"- {key}" for key in missing_keys])}
-
-Guidelines:
-✅ Use only official sources (mygov.in, india.gov.in, PIB, ministry portals, official PDFs)
-✅ Be detailed and specific for each field
-✅ Use bullet points where helpful
-❌ Do not include the `tags` field
-❌ Do not hallucinate. Leave blank if not found
-✅ Include a `sources` list at the end (not per field)
-
----
-
-### ✍️ Format your response like this:
+Format for each field (example for `objective`):
 
 {
-  "objective": "• Describe the aim of the scheme clearly.\\n• Mention any long-term goals.",
-  "eligibility": "• Who can apply?\\n• Conditions or restrictions if any.",
-  "key_benefits": "• Financial or non-financial support.\\n• Coverage details.",
-  "how_to_apply": "• Application steps\\n• Portal links or authorities to approach.",
-  "required_documents": "• List of key documents\\n• Certificates or proof required.",
+  "objective": "• content\\n• more details"
+}
+
+...repeat for each field...
+
+At the end, provide:
+
+{
   "sources": [
-    "https://official-source-1.gov.in",
-    "https://official-source-2.pdf"
+    "https://official-source-1",
+    "https://official-source-2"
   ]
 }
 '''.strip()
