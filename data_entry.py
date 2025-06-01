@@ -1,22 +1,18 @@
 import streamlit as st
 import json
-import pandas as pd
 from pathlib import Path
 from datetime import datetime
 import streamlit.components.v1 as components
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
 
-# — Read MongoDB URL from secrets.toml —
+# Read MongoDB URL from secrets
 mongo_uri = st.secrets["mongo_uri"]
-
-# Establish a single MongoClient for the entire app
 client = MongoClient(mongo_uri)
 db = client["msme_schemes_db"]
 schemes_coll = db["schemes"]
 locks_coll = db["locks"]
 logs_coll = db["user_logs"]
-users_coll = db["users"]
 
 st.sidebar.subheader("👤 Enter Your Name")
 current_user = st.sidebar.text_input("Your full name", "")
@@ -28,12 +24,10 @@ def acquire_lock(scheme_id: str, user: str) -> bool:
     now = datetime.utcnow()
     lock_doc = locks_coll.find_one({"scheme_id": scheme_id})
     if lock_doc:
-        locked_at = lock_doc["locked_at"]
-        locked_by = lock_doc["locked_by"]
-        if (now - locked_at).total_seconds() > 300:
+        if (now - lock_doc["locked_at"]).total_seconds() > 300:
             locks_coll.replace_one({"scheme_id": scheme_id}, {"scheme_id": scheme_id, "locked_by": user, "locked_at": now})
             return True
-        if locked_by == user:
+        if lock_doc["locked_by"] == user:
             locks_coll.update_one({"scheme_id": scheme_id}, {"$set": {"locked_at": now}})
             return True
         return False
@@ -41,6 +35,7 @@ def acquire_lock(scheme_id: str, user: str) -> bool:
         locks_coll.insert_one({"scheme_id": scheme_id, "locked_by": user, "locked_at": now})
         return True
 
+# Title and initial DB check
 st.title("📋 MSME Scheme Editor Tool")
 data_file = Path("definitely_final.json")
 if schemes_coll.estimated_document_count() == 0:
@@ -69,54 +64,38 @@ if "new_scheme" in st.session_state:
 col1, col2 = st.columns(2)
 with col1:
     if st.button("➕ Add New Scheme"):
-        blank_scheme = {
-            "scheme_id": "",
-            "jurisdiction": "",
-            "scheme_name": "",
-            "category": "",
-            "status": "",
-            "ministry": "",
-            "target_group": "",
-            "objective": "",
-            "eligibility": "",
-            "assistance": [],
-            "key_benefits": "",
-            "how_to_apply": "",
-            "required_documents": [],
-            "tags": "",
-            "sources": "",
-            "last_modified_by": None,
-            "last_modified_at": None
+        st.session_state["new_scheme"] = {
+            "scheme_id": "", "jurisdiction": "", "scheme_name": "", "category": "",
+            "status": "", "ministry": "", "target_group": "", "objective": "",
+            "eligibility": "", "assistance": [], "key_benefits": "", "how_to_apply": "",
+            "required_documents": [], "tags": "", "sources": "",
+            "last_modified_by": None, "last_modified_at": None
         }
-        st.session_state["new_scheme"] = blank_scheme
 
 with col2:
     if st.button("🗑️ Delete This Scheme"):
         confirm = st.checkbox(f"Confirm deletion of '{selected_id}'", key="confirm_delete")
         if confirm:
             schemes_coll.delete_one({"scheme_id": selected_id})
-            logs_coll.insert_one({"scheme_id": selected_id, "user": current_user, "action": "deleted", "timestamp": datetime.utcnow()})
+            logs_coll.insert_one({
+                "scheme_id": selected_id, "user": current_user,
+                "action": "deleted", "timestamp": datetime.utcnow()
+            })
             st.success(f"🗑️ Scheme '{selected_id}' deleted from MongoDB.")
-            if "new_scheme" in st.session_state:
-                del st.session_state["new_scheme"]
+            st.rerun()
 
-is_new = False
-if "new_scheme" in st.session_state:
-    scheme = st.session_state["new_scheme"]
-    is_new = True
-    st.subheader("🆕 Add New Scheme")
-else:
-    scheme = schemes_coll.find_one({"scheme_id": selected_id})
-    if not scheme:
-        st.error(f"Scheme '{selected_id}' not found in the database.")
-        st.stop()
-    st.subheader(f"📝 Edit Scheme Details: {selected_id}")
+is_new = "new_scheme" in st.session_state
+scheme = st.session_state["new_scheme"] if is_new else schemes_coll.find_one({"scheme_id": selected_id})
 
-if not is_new:
-    can_edit = acquire_lock(selected_id, current_user)
-    if not can_edit:
-        st.error("🚫 This scheme is currently being edited by someone else. Please try again later.")
-        st.stop()
+if not scheme:
+    st.error(f"Scheme '{selected_id}' not found in the database.")
+    st.stop()
+
+st.subheader("🆕 Add New Scheme" if is_new else f"📝 Edit Scheme Details: {selected_id}")
+
+if not is_new and not acquire_lock(selected_id, current_user):
+    st.error("🚫 This scheme is currently being edited by someone else. Please try again later.")
+    st.stop()
 
 if not is_new:
     last_log = logs_coll.find_one({"scheme_id": selected_id}, sort=[("timestamp", -1)])
@@ -126,22 +105,17 @@ if not is_new:
         st.info("ℹ️ This scheme has never been edited yet.")
 
 with st.form("edit_form"):
-    if is_new:
-        scheme["scheme_id"] = st.text_input("scheme_id", scheme.get("scheme_id", "")).strip()
-    else:
-        st.text_input("scheme_id", scheme["scheme_id"], disabled=True)
-
-    for key, value in list(scheme.items()):
+    scheme["scheme_id"] = st.text_input("scheme_id", scheme.get("scheme_id", ""), disabled=not is_new)
+    for key, value in scheme.items():
         if key == "scheme_id":
             continue
         if isinstance(value, list):
-            new_val = st.text_area(key, "\n".join(value) if value else "")
-            scheme[key] = [line.strip() for line in new_val.splitlines() if line.strip()]
+            lines = st.text_area(key, "\n".join(value))
+            scheme[key] = [line.strip() for line in lines.splitlines() if line.strip()]
         else:
             scheme[key] = st.text_area(key, value or "", height=100)
 
-    submitted = st.form_submit_button("💾 Save Changes")
-    if submitted:
+    if st.form_submit_button("💾 Save Changes"):
         scheme["last_modified_by"] = current_user
         scheme["last_modified_at"] = datetime.utcnow()
         if is_new:
@@ -152,18 +126,19 @@ with st.form("edit_form"):
             else:
                 schemes_coll.insert_one(scheme)
                 logs_coll.insert_one({"scheme_id": scheme["scheme_id"], "user": current_user, "action": "created", "timestamp": datetime.utcnow()})
-                st.success(f"✅ New scheme '{scheme['scheme_id']}' added to MongoDB.")
                 del st.session_state["new_scheme"]
+                st.success(f"✅ Scheme '{scheme['scheme_id']}' added.")
+                st.rerun()
         else:
-            if "_id" in scheme:
-                scheme.pop("_id")
+            scheme.pop("_id", None)
             schemes_coll.replace_one({"scheme_id": selected_id}, scheme)
             locks_coll.delete_one({"scheme_id": selected_id})
             logs_coll.insert_one({"scheme_id": selected_id, "user": current_user, "action": "edited", "timestamp": datetime.utcnow()})
-            st.success("✅ Changes saved to MongoDB and lock released.")
+            st.success("✅ Scheme updated and lock released.")
+            st.rerun()
 
-# Prompt generation
-missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k != "scheme_id" and k != "tags"]
+# Missing fields prompt generator
+missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k not in ("scheme_id", "tags")]
 prompt = f'''
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
 
@@ -175,7 +150,7 @@ The following fields are missing and need to be filled individually and in detai
 {chr(10).join([f"- {key}" for key in missing_keys])}
 
 Guidelines:
-- ✅ Use **only official sources** such as ministry portals, mygov.in, india.gov.in, PIB, or official PDF guidelines.
+- ✅ Use only official sources such as ministry portals, mygov.in, india.gov.in, PIB, or official PDF guidelines.
 - ✅ Be as detailed and specific as possible for each field.
 - ✅ Use bullet points where helpful.
 - ❌ Do not include or generate the `tags` field.
@@ -184,21 +159,19 @@ Guidelines:
 
 ---
 
-### 📦 Format your output **exactly** like this:
+Format your output like:
 
-```json
-{
-  "objective": "• <content>\n• <more content>",
-  "eligibility": "• <content>\n• <more content>",
-  "key_benefits": "• <content>\n• <more content>",
-  "how_to_apply": "• <content>\n• <more content>",
-  "required_documents": "• <content>\n• <more content>",
+{{
+  "objective": "• content\\n• more",
+  "eligibility": "• eligibility 1\\n• eligibility 2",
+  "key_benefits": "• benefit 1\\n• benefit 2",
+  "how_to_apply": "• step 1\\n• step 2",
+  "required_documents": "• doc 1\\n• doc 2",
   "sources": [
-    "https://<official-source-link-1>",
-    "https://<official-source-link-2>"
+    "https://official-source-1",
+    "https://official-source-2"
   ]
-}
-```
+}}
 '''.strip()
 
 st.subheader("🤖 Copy Final Prompt + Scheme")
