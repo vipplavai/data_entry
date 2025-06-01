@@ -147,31 +147,32 @@ Scheme Details:
 - scheme_name: "{scheme.get("scheme_name", "")}"
 
 The following fields are missing and need to be filled individually and in detail:
+
 {chr(10).join([f"- {key}" for key in missing_keys])}
 
 Guidelines:
-- ✅ Use only official sources such as ministry portals, mygov.in, india.gov.in, PIB, or official PDF guidelines.
-- ✅ Be as detailed and specific as possible for each field.
-- ✅ Use bullet points where helpful.
-- ❌ Do not include or generate the `tags` field.
-- ❌ Do not hallucinate. Leave a field blank if no official info is found.
-- ✅ At the end, include a `sources` field listing all URLs or PDFs used (one list for all, not per field).
+✅ Use only official sources (mygov.in, india.gov.in, PIB, ministry portals, official PDFs)
+✅ Be detailed and specific for each field
+✅ Use bullet points where helpful
+❌ Do not include the `tags` field
+❌ Do not hallucinate. Leave blank if not found
+✅ Include a `sources` list at the end (not per field)
 
 ---
 
-Format your output like:
+### ✍️ Format your response like this:
 
-{{
-  "objective": "• content\\n• more",
-  "eligibility": "• eligibility 1\\n• eligibility 2",
-  "key_benefits": "• benefit 1\\n• benefit 2",
-  "how_to_apply": "• step 1\\n• step 2",
-  "required_documents": "• doc 1\\n• doc 2",
+{
+  "objective": "• Describe the aim of the scheme clearly.\\n• Mention any long-term goals.",
+  "eligibility": "• Who can apply?\\n• Conditions or restrictions if any.",
+  "key_benefits": "• Financial or non-financial support.\\n• Coverage details.",
+  "how_to_apply": "• Application steps\\n• Portal links or authorities to approach.",
+  "required_documents": "• List of key documents\\n• Certificates or proof required.",
   "sources": [
-    "https://official-source-1",
-    "https://official-source-2"
+    "https://official-source-1.gov.in",
+    "https://official-source-2.pdf"
   ]
-}}
+}
 '''.strip()
 
 st.subheader("🤖 Copy Final Prompt + Scheme")
