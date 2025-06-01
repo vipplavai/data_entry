@@ -2,4 +2,3 @@ streamlit
 pymongo
 pandas
 numpy
-2nd
