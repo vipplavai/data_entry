@@ -4,10 +4,12 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime
 import streamlit.components.v1 as components
-from pymongo import MongoClient, DuplicateKeyError
+from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
+
 
 # — Read MongoDB URL from secrets.toml —
-mongo_uri = st.secrets["MONGO_URI"]
+mongo_uri = st.secrets["mongo_uri"]
 
 # Establish a single MongoClient for the entire app
 client = MongoClient(mongo_uri)
