@@ -108,6 +108,9 @@ if not scheme_ids:
 # 5) Select box for existing schemes
 # =============================================================================
 selected_id = st.selectbox("Select Scheme ID", scheme_ids)
+if "new_scheme" in st.session_state:
+    if selected_id != st.session_state["new_scheme"].get("scheme_id", ""):
+        del st.session_state["new_scheme"]
 
 
 # =============================================================================
