@@ -154,7 +154,7 @@ Instructions:
 - Do not include the `sources` field in the individual JSON blocks.
 - After providing all the individual JSON blocks, provide a single JSON block at the end with the `sources` field listing all official URLs or PDF titles used for the entire scheme.
 - Use only official Indian government sources (e.g., ministry portals, india.gov.in, mygov.in, PIB, or official PDF guidelines).
-- Be detailed and specific. Use bullet points where helpful.
+- Be as detailed and specific as possible. Use bullet points where helpful.
 - Do not include or generate the `tags` field.
 - Do not hallucinate or guess. Leave a field blank if no official info is found.
 - Output only the JSON blocks as specified, nothing else.
