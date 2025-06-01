@@ -43,15 +43,13 @@ def acquire_lock(scheme_id: str, user: str) -> bool:
 
 st.title("📋 MSME Scheme Editor Tool")
 data_file = Path("definitely_final.json")
-if schemes_coll.count_documents({}) == 0:
+if schemes_coll.estimated_document_count() == 0:
     if data_file.exists():
         with open(data_file, "r", encoding="utf-8") as f:
             json_schemes = json.load(f)
-        for s in json_schemes:
-            try:
-                schemes_coll.insert_one(s)
-            except DuplicateKeyError:
-                pass
+        schemes_coll.insert_many(json_schemes)
+        st.success("✅ Data seeded from definitely_final.json to MongoDB.")
+        st.rerun()
     else:
         st.error("Scheme data file not found, and MongoDB is empty!")
         st.stop()
@@ -164,7 +162,7 @@ with st.form("edit_form"):
             logs_coll.insert_one({"scheme_id": selected_id, "user": current_user, "action": "edited", "timestamp": datetime.utcnow()})
             st.success("✅ Changes saved to MongoDB and lock released.")
 
-# One-button prompt + scheme copy
+# Prompt generation
 missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k != "scheme_id" and k != "tags"]
 prompt = f'''
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
