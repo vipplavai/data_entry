@@ -174,7 +174,7 @@ scheme_copy = scheme.copy()
 scheme_copy.pop("_id", None)
 scheme_copy.pop("tags", None)
 
-full_prompt = f'''
+prompt = f'''
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
 
 Instructions:
