@@ -156,7 +156,6 @@ missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k not in
 if "category" not in missing_keys:
     missing_keys.insert(0, "category")  # Ensure category is always included
 
-# Build Prompt
 instruction_block = f"""
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
 
@@ -197,4 +196,3 @@ if display_missing:
     st.warning(f"Missing fields: {', '.join(display_missing)}")
 else:
     st.success("All fields are filled ✅")
-
