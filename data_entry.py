@@ -303,14 +303,29 @@ with st.form("edit_form"):
 
         # Put these in an expander to save space
         with st.expander("► Eligibility Criteria"):
+            st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
             existing = "\n".join(scheme.get("eligibility", []))
-            lines = st.text_area("eligibility", existing, height=120)
+            lines = st.text_area(
+                label="Eligibility Criteria",
+                value=existing,
+                height=120,
+                help="Enter each eligibility criterion on its own line."
+            )
             scheme["eligibility"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+            st.markdown("</div>", unsafe_allow_html=True)
 
         with st.expander("► Assistance Details"):
+            st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
             existing = "\n".join(scheme.get("assistance", []))
-            lines = st.text_area("assistance", existing, height=120)
+            lines = st.text_area(
+                label="Assistance Details",
+                value=existing,
+                height=120,
+                help="List each assistance benefit on its own line."
+            )
             scheme["assistance"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+            st.markdown("</div>", unsafe_allow_html=True)
+
 
     with tab_details:
         with st.expander("► Key Benefits"):
