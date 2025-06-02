@@ -41,11 +41,13 @@ st.markdown(
       }
 
       /* ==== New: Force all text inputs & text areas to have white background + border ==== */
-      textarea, .stTextArea textarea {
-          background-color: #FFFFFF !important;
-          border: 1px solid #ccc !important;
-          border-radius: 4px !important;
-      }
+        textarea, .stTextArea textarea {
+            background-color: #FFFFFF !important;
+            border: 1px solid #ccc !important;
+            border-radius: 4px !important;
+            width: 100% !important;             /* ensure full width */
+    }
+
       .stTextInput > div > input {
           background-color: #FFFFFF !important;
           border: 1px solid #ccc !important;
@@ -303,7 +305,9 @@ with st.form("edit_form"):
 
         # Put these in an expander to save space
         with st.expander("► Eligibility Criteria"):
+    # --- Wrap the textarea in a white-bordered box ---
             st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
+
             existing = "\n".join(scheme.get("eligibility", []))
             lines = st.text_area(
                 label="Eligibility Criteria",
@@ -312,19 +316,25 @@ with st.form("edit_form"):
                 help="Enter each eligibility criterion on its own line."
             )
             scheme["eligibility"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+
             st.markdown("</div>", unsafe_allow_html=True)
 
+
         with st.expander("► Assistance Details"):
+    # --- Wrap the textarea in a white-bordered box ---
             st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
+
             existing = "\n".join(scheme.get("assistance", []))
             lines = st.text_area(
                 label="Assistance Details",
                 value=existing,
                 height=120,
-                help="List each assistance benefit on its own line."
+                help="List each assistance point on its own line."
             )
             scheme["assistance"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+
             st.markdown("</div>", unsafe_allow_html=True)
+
 
 
     with tab_details:
