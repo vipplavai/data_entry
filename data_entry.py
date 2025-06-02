@@ -71,15 +71,17 @@ if schemes_coll.estimated_document_count() == 0:
 
 scheme_ids = [doc["scheme_id"] for doc in schemes_coll.find({}, {"scheme_id": 1})]
 
-search_id = st.text_input("🔍 Search Scheme ID").strip().lower()
-matching_ids = [sid for sid in scheme_ids if search_id in sid.lower()] if search_id else []
+search_id = st.text_input("🔍 Search Scheme ID (case-insensitive)").strip().lower()
 
-if matching_ids:
-    selected_id = st.selectbox("Select Matching Scheme", matching_ids)
-else:
-    if search_id:
-        st.warning("No matching scheme IDs found.")
-    selected_id = None
+selected_id = None
+if search_id:
+    matching = next((sid for sid in scheme_ids if sid.lower() == search_id), None)
+    if matching:
+        selected_id = matching
+    else:
+        st.warning("No exact match found for scheme ID.")
+        st.stop()
+
 
 if "new_scheme" in st.session_state:
     if selected_id != st.session_state["new_scheme"].get("scheme_id", ""):
