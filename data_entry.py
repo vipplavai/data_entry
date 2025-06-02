@@ -35,8 +35,36 @@ def acquire_lock(scheme_id: str, user: str) -> bool:
         locks_coll.insert_one({"scheme_id": scheme_id, "locked_by": user, "locked_at": now})
         return True
 
-# Title and initial DB check
-st.title("📋 MSME Scheme Editor Tool")
+# Page configuration and styled header
+st.set_page_config(
+    page_title="MSME Scheme Editor",
+    page_icon="📋",
+    layout="wide"
+)
+st.markdown(
+    "<h1 style='text-align: center; color: #4B426D; font-family: sans-serif;'>📋 MSME Scheme Editor Tool</h1>",
+    unsafe_allow_html=True
+)
+# --- Add this CSS block for a light, neutral background and modern container look ---
+st.markdown(
+    """
+    <style>
+      /* Apply a light-gray background to the entire app */
+      .stApp {
+          background-color: #F0F2F6;
+      }
+      /* Make containers and forms stand out with a white card-like background */
+      .css-1d391kg {  /* .css-1d391kg is the class for the main block container (may vary slightly by version) */
+          background-color: #FFFFFF;
+          border-radius: 12px;
+          padding: 1.5rem;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 data_file = Path("F_sources_updated.json")
 if schemes_coll.estimated_document_count() == 0:
     if data_file.exists():
@@ -71,7 +99,26 @@ if schemes_coll.estimated_document_count() == 0:
 
 scheme_ids = [doc["scheme_id"] for doc in schemes_coll.find({}, {"scheme_id": 1})]
 
-search_id = st.text_input("🔍 Search Scheme ID (case-insensitive)").strip().lower()
+# --- Sidebar search for Scheme ID ---
+with st.sidebar.container():
+    st.sidebar.subheader("🔍 Find a Scheme")
+    search_input = st.sidebar.text_input(
+        "Scheme ID (case-insensitive)",
+        value="",
+        help="Type the scheme_id exactly, then click 'Search'"
+    ).strip().lower()
+
+    if st.sidebar.button("🔎 Search"):
+        if search_input:
+            match = next((sid for sid in scheme_ids if sid.lower() == search_input), None)
+            if match:
+                st.session_state["selected_id"] = match
+            else:
+                st.sidebar.warning("No exact match found.")
+        else:
+            st.sidebar.info("Please type a scheme_id first.")
+    # If the user hasn't searched yet, default to any existing session state
+    selected_id = st.session_state.get("selected_id", None)
 
 selected_id = None
 if search_id:
@@ -91,9 +138,15 @@ if not selected_id:
     st.stop()
 
 
-col1, col2 = st.columns(2)
-with col1:
-    if st.button("➕ Add New Scheme"):
+# --- Button bar for Add / Delete, styled as a horizontal container ---
+button_col1, button_col2, _ = st.columns([1, 1, 2])
+
+with button_col1:
+    if st.button(
+          label="➕ Add New Scheme",
+          key="create_scheme_btn",
+          help="Click to add a brand‐new scheme",
+    ):
         st.session_state["new_scheme"] = {
             "scheme_id": "", "jurisdiction": "", "scheme_name": "", "category": "",
             "status": "", "ministry": "", "target_group": "", "objective": "",
@@ -102,17 +155,27 @@ with col1:
             "last_modified_by": None, "last_modified_at": None
         }
 
-with col2:
-    if st.button("🗑️ Delete This Scheme"):
-        confirm = st.checkbox(f"Confirm deletion of '{selected_id}'", key="confirm_delete")
+with button_col2:
+    if st.button(
+          label="🗑️ Delete This Scheme",
+          key="delete_scheme_btn",
+          help="Permanently remove selected scheme",
+          args=(),
+          kwargs={},
+    ):
+        confirm = st.checkbox(
+            f"Confirm deletion of '{selected_id}'",
+            key="confirm_delete"
+        )
         if confirm:
             schemes_coll.delete_one({"scheme_id": selected_id})
             logs_coll.insert_one({
                 "scheme_id": selected_id, "user": current_user,
                 "action": "deleted", "timestamp": datetime.utcnow()
             })
-            st.success(f"🗑️ Scheme '{selected_id}' deleted from MongoDB.")
+            st.success(f"🗑️ Scheme '{selected_id}' deleted.")
             st.rerun()
+
 
 is_new = "new_scheme" in st.session_state
 scheme = st.session_state["new_scheme"] if is_new else schemes_coll.find_one({"scheme_id": selected_id})
@@ -135,37 +198,145 @@ if not is_new:
         st.info("ℹ️ This scheme has never been edited yet.")
 
 with st.form("edit_form"):
-    scheme["scheme_id"] = st.text_input("scheme_id", scheme.get("scheme_id", ""), disabled=not is_new)
-    for key, value in scheme.items():
-        if key == "scheme_id":
-            continue
-        if isinstance(value, list):
-            lines = st.text_area(key, "\n".join(value))
-            scheme[key] = [line.strip() for line in lines.splitlines() if line.strip()]
-        else:
-            scheme[key] = st.text_area(key, value or "", height=100)
+    # --- Top row: one‐line fields ---
+    gen_col1, gen_col2 = st.columns(2)
+    with gen_col1:
+        scheme["scheme_id"] = st.text_input(
+            label="Scheme ID",
+            value=scheme.get("scheme_id", ""),
+            disabled=not is_new,
+            help="Unique identifier (cannot be edited if already exists)."
+        )
+        scheme["jurisdiction"] = st.text_input(
+            label="Jurisdiction",
+            value=scheme.get("jurisdiction", ""),
+            help="Geographic or administrative jurisdiction."
+        )
+        scheme["scheme_name"] = st.text_input(
+            label="Scheme Name",
+            value=scheme.get("scheme_name", ""),
+            help="Official scheme title."
+        )
+    with gen_col2:
+        scheme["category"] = st.text_input(
+            label="Category",
+            value=scheme.get("category", ""),
+            help="Comma‐separated categories (up to 6)."
+        )
+        scheme["status"] = st.selectbox(
+            label="Status",
+            options=["Active", "Inactive", "Pending", ""],
+            index=(["Active", "Inactive", "Pending", ""].index(scheme.get("status", "")) if scheme.get("status", "") in ["Active","Inactive","Pending"] else 3),
+            help="Current status of the scheme."
+        )
+        scheme["ministry"] = st.text_input(
+            label="Ministry",
+            value=scheme.get("ministry", ""),
+            help="Overseeing government ministry."
+        )
 
-    if st.form_submit_button("💾 Save Changes"):
-        scheme["last_modified_by"] = current_user
-        scheme["last_modified_at"] = datetime.utcnow()
-        if is_new:
-            if not scheme["scheme_id"]:
-                st.error("⚠️ scheme_id cannot be blank.")
-            elif schemes_coll.find_one({"scheme_id": scheme["scheme_id"]}):
-                st.error("⚠️ That scheme_id already exists. Choose a different one.")
+    # --- Tabs for the longer text / lists ---
+    tab_general, tab_details = st.tabs(["General Info", "Core Details"])
+
+    with tab_general:
+        scheme["target_group"] = st.text_input(
+            label="Target Group",
+            value=scheme.get("target_group", ""),
+            help="Who is eligible (e.g., Women Entrepreneurs, MSMEs)."
+        )
+        scheme["objective"] = st.text_area(
+            label="Objective",
+            value=scheme.get("objective", ""),
+            height=120,
+            help="Purpose of the scheme (use bullet points if needed)."
+        )
+
+        # Put these in an expander to save space
+        with st.expander("► Eligibility Criteria"):
+            existing = "\n".join(scheme.get("eligibility", []))
+            lines = st.text_area("eligibility", existing, height=120)
+            scheme["eligibility"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+
+        with st.expander("► Assistance Details"):
+            existing = "\n".join(scheme.get("assistance", []))
+            lines = st.text_area("assistance", existing, height=120)
+            scheme["assistance"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+
+    with tab_details:
+        with st.expander("► Key Benefits"):
+            scheme["key_benefits"] = st.text_area(
+                label="Key Benefits",
+                value=scheme.get("key_benefits", ""),
+                height=120,
+                help="List key advantages (one bullet per line)."
+            )
+        with st.expander("► How to Apply"):
+            scheme["how_to_apply"] = st.text_area(
+                label="How to Apply",
+                value=scheme.get("how_to_apply", ""),
+                height=120,
+                help="Steps for application process."
+            )
+        with st.expander("► Required Documents"):
+            existing = "\n".join(scheme.get("required_documents", []))
+            lines = st.text_area("required_documents", existing, height=120)
+            scheme["required_documents"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+
+        scheme["tags"] = st.text_input(
+            label="Tags",
+            value=scheme.get("tags", ""),
+            help="Any comma‐separated tags for search‐filtering."
+        )
+        scheme["sources"] = st.text_input(
+            label="Sources (comma‐separated URLs)",
+            value=scheme.get("sources", ""),
+            help="Official reference URLs (e.g., gov.in, mygov.in)."
+        )
+
+    # --- Save / Cancel Buttons at the bottom ---
+    save_col, cancel_col = st.columns([1, 1])
+    with save_col:
+        if st.form_submit_button("💾 Save Changes"):
+            scheme["last_modified_by"] = current_user
+            scheme["last_modified_at"] = datetime.utcnow()
+            if is_new:
+                if not scheme["scheme_id"]:
+                    st.error("⚠️ scheme_id cannot be blank.")
+                elif schemes_coll.find_one({"scheme_id": scheme["scheme_id"]}):
+                    st.error("⚠️ That scheme_id already exists. Choose a different one.")
+                else:
+                    schemes_coll.insert_one(scheme)
+                    logs_coll.insert_one({
+                        "scheme_id": scheme["scheme_id"],
+                        "user": current_user,
+                        "action": "created",
+                        "timestamp": datetime.utcnow()
+                    })
+                    del st.session_state["new_scheme"]
+                    st.success(f"✅ Scheme '{scheme['scheme_id']}' added.")
+                    st.rerun()
             else:
-                schemes_coll.insert_one(scheme)
-                logs_coll.insert_one({"scheme_id": scheme["scheme_id"], "user": current_user, "action": "created", "timestamp": datetime.utcnow()})
-                del st.session_state["new_scheme"]
-                st.success(f"✅ Scheme '{scheme['scheme_id']}' added.")
+                scheme.pop("_id", None)
+                schemes_coll.replace_one({"scheme_id": selected_id}, scheme)
+                locks_coll.delete_one({"scheme_id": selected_id})
+                logs_coll.insert_one({
+                    "scheme_id": selected_id,
+                    "user": current_user,
+                    "action": "edited",
+                    "timestamp": datetime.utcnow()
+                })
+                st.success("✅ Scheme updated and lock released.")
                 st.rerun()
-        else:
-            scheme.pop("_id", None)
-            schemes_coll.replace_one({"scheme_id": selected_id}, scheme)
-            locks_coll.delete_one({"scheme_id": selected_id})
-            logs_coll.insert_one({"scheme_id": selected_id, "user": current_user, "action": "edited", "timestamp": datetime.utcnow()})
-            st.success("✅ Scheme updated and lock released.")
+
+    with cancel_col:
+        if st.form_submit_button("✖ Cancel"):
+            if is_new:
+                del st.session_state["new_scheme"]
+            else:
+                locks_coll.delete_one({"scheme_id": selected_id})
+            st.info("Edit cancelled.")
             st.rerun()
+
 
 # Prompt generation with dynamic required fields
 required_fields = ["objective", "eligibility", "key_benefits", "how_to_apply", "required_documents", "category", "sources"]
@@ -173,11 +344,21 @@ missing_keys = [k for k in required_fields if scheme.get(k) in (None, "", [], {}
 
 # missing_keys += ["category", "sources"]  # always include these
 
-st.subheader("🔍 Missing Fields Info")
-if missing_keys:
-    st.info(f"Missing fields: {', '.join(missing_keys)}")
-else:
-    st.success("All key fields are filled ✅")
+# --- Missing or Complete Fields Banner ---
+with st.container():
+    if missing_keys:
+        st.markdown(
+            f"<div style='background-color:#FFF4E5; padding:1rem; border-left:4px solid #FFA500; border-radius:8px;'>"
+            f"🔍 <strong>Missing fields:</strong> {', '.join(missing_keys)}</div>",
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            "<div style='background-color:#E8F5E9; padding:1rem; border-left:4px solid #4CAF50; border-radius:8px;'>"
+            "✅ <strong>All key fields are filled.</strong></div>",
+            unsafe_allow_html=True
+        )
+
 
 scheme_copy = {k: v for k, v in scheme.items() if k != "_id" and k != "tags"}
 
@@ -221,10 +402,33 @@ Here is the scheme to process:
 
 
 
-st.subheader("🤖 Copy Final Prompt + Scheme")
-components.html(f"""
-    <textarea id='fullPrompt' style='display:none;'>{prompt}</textarea>
-    <button onclick="navigator.clipboard.writeText(document.getElementById('fullPrompt').value); alert('Full prompt copied to clipboard!');">
+st.subheader("🤖 Generate & Copy Prompt")
+
+# Place prompt in a hidden textarea inside a styled container
+components.html(
+    f"""
+    <div style="display:flex; align-items:center; margin-bottom:1rem;">
+      <textarea id='fullPrompt' style='display:none;'>{prompt}</textarea>
+      <button
+        style='
+          background-color:#4B426D;
+          color:white;
+          border:none;
+          border-radius:8px;
+          padding:0.75rem 1.5rem;
+          font-size:1rem;
+          cursor:pointer;
+        '
+        onclick="navigator.clipboard.writeText(document.getElementById('fullPrompt').value);
+                 this.innerText='✅ Copied!';"
+      >
         📋 Copy Prompt for ChatGPT
-    </button>
-""", height=120)
+      </button>
+    </div>
+    """,
+    height=80
+)
+st.markdown(
+    "<small style='color:#555;'>Use this prompt in ChatGPT to fill in missing fields automatically.</small>",
+    unsafe_allow_html=True
+)
