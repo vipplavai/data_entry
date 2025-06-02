@@ -137,62 +137,50 @@ with st.form("edit_form"):
             st.success("✅ Scheme updated and lock released.")
             st.rerun()
 
-# Enhanced Prompt with Full Scheme and Categories
-categories_list = [
-    "Business & Industry", "Employment & Livelihood", "Education & Training", "Women Empowerment",
-    "Minority & Social Welfare", "Health & Insurance", "Environment & Energy", "Research & Innovation",
-    "Infrastructure", "Agriculture & Allied Sectors", "Technology & Digital Economy", "Marketing & Trade",
-    "Skill Development", "Rural Development", "Subsidy", "Grant", "Loan", "Interest Subvention", "Reimbursement",
-    "Incentive", "Seed Capital", "Guarantee Scheme", "Capital Investment Support", "Tax Exemption", "Skill Training",
-    "Incubation", "Infrastructure Support", "Marketing Support", "Patent/Certification Reimbursement", "MSME",
-    "SC/ST", "Minorities", "Women Entrepreneurs", "First-Generation Entrepreneurs", "Startups", "Youth",
-    "Farmers/FPOs", "Handicraft/Artisan Groups", "Rural Enterprises", "Textiles", "Food Processing", "Poultry",
-    "Dairy", "Handlooms & Khadi", "Electronics", "Automobile/EV", "IT/ITES", "Coir Sector", "Logistics",
-    "Export Promotion", "E-waste", "Clean Energy", "Innovation", "Agri-Tech", "Retail & Distribution",
-    "Manufacturing", "Traditional Industries", "Research Institutions"
-]
-
+# Missing fields prompt generator
+# Prompt generation
+# Prompt generation
 missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k not in ("scheme_id", "tags")]
-if "category" not in missing_keys:
-    missing_keys.insert(0, "category")  # Ensure category is always included
 
-# Build Prompt
-instruction_block = f"""
+prompt = f'''
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
 
+Scheme Details:
+- scheme_id: "{scheme.get("scheme_id", "")}"
+- scheme_name: "{scheme.get("scheme_name", "")}"
+
 Instructions:
-- For each required field ({', '.join(f'`{k}`' for k in missing_keys)}), return a separate JSON block with only that field filled.
-- Do not include the `tags` field.
-- After providing all the individual JSON blocks, provide a single JSON block at the end with:
-  - `category`: A list of 1 or more categories chosen from the following list:
-    {json.dumps(categories_list, indent=2)}
-  - `sources`: All official sources used for reference.
-
-Category Handling Instructions:
-1. If a `category` is already present in the input, check whether each category term is valid (i.e., part of the above list).
-2. If the existing value is invalid or empty, replace it with the appropriate list from above.
-3. If it is valid, keep the existing categories and add additional relevant ones as necessary.
-
-Rules:
-- Use only official Indian government sources (e.g., ministry portals, india.gov.in, mygov.in, PIB).
+- For each required field (`objective`, `eligibility`, `key_benefits`, `how_to_apply`, `required_documents`), return a separate JSON block with only that field filled.
+- Do not include the `sources` field in the individual JSON blocks.
+- After providing all the individual JSON blocks, provide a single JSON block at the end with the `sources` field listing all official URLs or PDF titles used for the entire scheme.
+- Use only official Indian government sources (e.g., ministry portals, india.gov.in, mygov.in, PIB, or official PDF guidelines).
 - Be as detailed and specific as possible. Use bullet points where helpful.
-- Leave a field blank if no official info is found.
-- Output only the required JSON blocks — no explanations, no markdown.
-""".strip()
+- Do not include or generate the `tags` field.
+- Do not hallucinate or guess. Leave a field blank if no official info is found.
+- Output only the JSON blocks as specified, nothing else.
 
-st.subheader("🤖 Copy Final Prompt + Full Scheme")
-scheme_payload = json.dumps([scheme], indent=2, ensure_ascii=False)
-full_prompt = f"{instruction_block}\n\nHere is the scheme to process:\n\n{scheme_payload}"
+Format for each field (example for `objective`):
 
+{{
+  "objective": "• content\\n• more details"
+}}
+
+...repeat for each field...
+
+At the end, provide:
+
+{{
+  "sources": [
+    "https://official-source-1",
+    "https://official-source-2"
+  ]
+}}
+'''.strip()
+
+st.subheader("🤖 Copy Final Prompt + Scheme")
 components.html(f"""
-    <textarea id='fullPrompt' style='display:none;'>{full_prompt}</textarea>
+    <textarea id='fullPrompt' style='display:none;'>{prompt}</textarea>
     <button onclick="navigator.clipboard.writeText(document.getElementById('fullPrompt').value); alert('Full prompt copied to clipboard!');">
         📋 Copy Prompt for ChatGPT
     </button>
-""", height=140)
-
-st.subheader("🔍 Fields with Missing Information")
-if missing_keys:
-    st.warning(f"Missing fields: {', '.join(missing_keys)}")
-else:
-    st.success("All fields are filled ✅")
+""", height=120)
