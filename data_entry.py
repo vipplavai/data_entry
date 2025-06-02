@@ -186,8 +186,8 @@ You are assisting in curating structured and verified data for an Indian governm
 Instructions:
 - For each required field ({', '.join(f'`{k}`' for k in missing_keys)}), return a separate block with only that field filled.
 - Do not include the `tags` field.
-- After providing all the individual JSON blocks, provide a single block at the end with:
-   - `category`: A list of 1 or more categories chosen **only** from this list:
+- After providing all the individual blocks, provide a single block at the end with:
+   - `category`: A list of 1 or more categories (maximum 6) chosen **only** from this list:
     ["Business & Industry", "Employment & Livelihood", "Education & Training", "Women Empowerment", "Minority & Social Welfare", "Health & Insurance", "Environment & Energy", "Research & Innovation", "Infrastructure", "Agriculture & Allied Sectors", "Technology & Digital Economy", "Marketing & Trade", "Skill Development", "Rural Development", "Subsidy", "Grant", "Loan", "Interest Subvention", "Reimbursement", "Incentive", "Seed Capital", "Guarantee Scheme", "Capital Investment Support", "Tax Exemption", "Skill Training", "Incubation", "Infrastructure Support", "Marketing Support", "Patent/Certification Reimbursement", "MSME", "SC/ST", "Minorities", "Women Entrepreneurs", "First-Generation Entrepreneurs", "Startups", "Youth", "Farmers/FPOs", "Handicraft/Artisan Groups", "Rural Enterprises", "Textiles", "Food Processing", "Poultry", "Dairy", "Handlooms & Khadi", "Electronics", "Automobile/EV", "IT/ITES", "Coir Sector", "Logistics", "Export Promotion", "E-waste", "Clean Energy", "Innovation", "Agri-Tech", "Retail & Distribution", "Manufacturing", "Traditional Industries", "Research Institutions"]
 
    - `sources`: All official sources used for reference.
