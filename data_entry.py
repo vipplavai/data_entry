@@ -137,7 +137,10 @@ with st.form("edit_form"):
             st.success("✅ Scheme updated and lock released.")
             st.rerun()
 
-# Enhanced Prompt with Full Scheme and Categories
+# Missing fields prompt generator
+# Prompt generation
+# Prompt generation
+
 categories_list = [
     "Business & Industry", "Employment & Livelihood", "Education & Training", "Women Empowerment",
     "Minority & Social Welfare", "Health & Insurance", "Environment & Energy", "Research & Innovation",
@@ -152,12 +155,17 @@ categories_list = [
     "Manufacturing", "Traditional Industries", "Research Institutions"
 ]
 
+
 missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k not in ("scheme_id", "tags")]
 if "category" not in missing_keys:
     missing_keys.insert(0, "category")  # Ensure category is always included
 
-instruction_block = f"""
+prompt = f'''
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
+
+Scheme Details:
+- scheme_id: "{scheme.get("scheme_id", "")}"
+- scheme_name: "{scheme.get("scheme_name", "")}"
 
 Instructions:
 - For each required field ({', '.join(f'`{k}`' for k in missing_keys)}), return a separate JSON block with only that field filled.
@@ -177,22 +185,29 @@ Rules:
 - Be as detailed and specific as possible. Use bullet points where helpful.
 - Leave a field blank if no official info is found.
 - Output only the required JSON blocks — no explanations, no markdown.
-""".strip()
 
-st.subheader("🤖 Copy Final Prompt + Full Scheme")
-scheme_payload = json.dumps([scheme], indent=2, ensure_ascii=False)
-full_prompt = f"{instruction_block}\n\nHere is the scheme to process:\n\n{scheme_payload}"
+Format for each field (example for `objective`):
 
+{{
+  "objective": "• content\\n• more details"
+}}
+
+...repeat for each field...
+
+At the end, provide:
+
+{{
+  "sources": [
+    "https://official-source-1",
+    "https://official-source-2"
+  ]
+}}
+'''.strip()
+
+st.subheader("🤖 Copy Final Prompt + Scheme")
 components.html(f"""
-    <textarea id='fullPrompt' style='display:none;'>{full_prompt}</textarea>
+    <textarea id='fullPrompt' style='display:none;'>{prompt}</textarea>
     <button onclick="navigator.clipboard.writeText(document.getElementById('fullPrompt').value); alert('Full prompt copied to clipboard!');">
         📋 Copy Prompt for ChatGPT
     </button>
-""", height=140)
-
-st.subheader("🔍 Fields with Missing Information")
-display_missing = [k for k in missing_keys if k != "category"]  # show actual missing only
-if display_missing:
-    st.warning(f"Missing fields: {', '.join(display_missing)}")
-else:
-    st.success("All fields are filled ✅")
+""", height=120)
