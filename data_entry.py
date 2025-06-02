@@ -37,7 +37,7 @@ def acquire_lock(scheme_id: str, user: str) -> bool:
 
 # Title and initial DB check
 st.title("📋 MSME Scheme Editor Tool")
-data_file = Path("definitely_final.json")
+data_file = Path("F_sources_updated.json")
 if schemes_coll.estimated_document_count() == 0:
     if data_file.exists():
         with open(data_file, "r", encoding="utf-8") as f:
@@ -140,7 +140,25 @@ with st.form("edit_form"):
 # Missing fields prompt generator
 # Prompt generation
 # Prompt generation
+
+categories_list = [
+    "Business & Industry", "Employment & Livelihood", "Education & Training", "Women Empowerment",
+    "Minority & Social Welfare", "Health & Insurance", "Environment & Energy", "Research & Innovation",
+    "Infrastructure", "Agriculture & Allied Sectors", "Technology & Digital Economy", "Marketing & Trade",
+    "Skill Development", "Rural Development", "Subsidy", "Grant", "Loan", "Interest Subvention", "Reimbursement",
+    "Incentive", "Seed Capital", "Guarantee Scheme", "Capital Investment Support", "Tax Exemption", "Skill Training",
+    "Incubation", "Infrastructure Support", "Marketing Support", "Patent/Certification Reimbursement", "MSME",
+    "SC/ST", "Minorities", "Women Entrepreneurs", "First-Generation Entrepreneurs", "Startups", "Youth",
+    "Farmers/FPOs", "Handicraft/Artisan Groups", "Rural Enterprises", "Textiles", "Food Processing", "Poultry",
+    "Dairy", "Handlooms & Khadi", "Electronics", "Automobile/EV", "IT/ITES", "Coir Sector", "Logistics",
+    "Export Promotion", "E-waste", "Clean Energy", "Innovation", "Agri-Tech", "Retail & Distribution",
+    "Manufacturing", "Traditional Industries", "Research Institutions"
+]
+
+
 missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k not in ("scheme_id", "tags")]
+if "category" not in missing_keys:
+    missing_keys.insert(0, "category")  # Ensure category is always included
 
 prompt = f'''
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
@@ -150,14 +168,23 @@ Scheme Details:
 - scheme_name: "{scheme.get("scheme_name", "")}"
 
 Instructions:
-- For each required field (`objective`, `eligibility`, `key_benefits`, `how_to_apply`, `required_documents`), return a separate JSON block with only that field filled.
-- Do not include the `sources` field in the individual JSON blocks.
-- After providing all the individual JSON blocks, provide a single JSON block at the end with the `sources` field listing all official URLs or PDF titles used for the entire scheme.
-- Use only official Indian government sources (e.g., ministry portals, india.gov.in, mygov.in, PIB, or official PDF guidelines).
+- For each required field ({', '.join(f'`{k}`' for k in missing_keys)}), return a separate JSON block with only that field filled.
+- Do not include the `tags` field.
+- After providing all the individual JSON blocks, provide a single JSON block at the end with:
+  - `category`: A list of **up to 5 categories** (never more) chosen from the following list:
+    {json.dumps(categories_list, indent=2)}
+  - `sources`: All official sources used for reference.
+
+Category Handling Instructions:
+1. If a `category` is already present in the input, check whether each category term is valid (i.e., part of the above list).
+2. If the existing value is invalid or empty, replace it with the appropriate list from above.
+3. If it is valid, keep the existing categories and add additional relevant ones as necessary.
+
+Rules:
+- Use only official Indian government sources (e.g., ministry portals, india.gov.in, mygov.in, PIB).
 - Be as detailed and specific as possible. Use bullet points where helpful.
-- Do not include or generate the `tags` field.
-- Do not hallucinate or guess. Leave a field blank if no official info is found.
-- Output only the JSON blocks as specified, nothing else.
+- Leave a field blank if no official info is found.
+- Output only the required JSON blocks — no explanations, no markdown.
 
 Format for each field (example for `objective`):
 
