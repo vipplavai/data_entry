@@ -150,7 +150,7 @@ Scheme Details:
 - scheme_name: "{scheme.get("scheme_name", "")}"
 
 Instructions:
-- For each required field (`objective`, `eligibility`, `key_benefits`, `how_to_apply`, `required_documents`), return a separate JSON block with only that field filled.
+- For each required field (`objective`, `eligibility`, `key_benefits`, `how_to_apply`,`category`, `required_documents`), return a separate JSON block with only that field filled.
 - Do not include the `sources` field in the individual JSON blocks.
 - After providing all the individual JSON blocks, provide a single JSON block at the end with the `sources` field listing all official URLs or PDF titles used for the entire scheme.
 - Use only official Indian government sources (e.g., ministry portals, india.gov.in, mygov.in, PIB, or official PDF guidelines).
