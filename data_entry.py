@@ -167,22 +167,30 @@ with st.form("edit_form"):
             st.success("✅ Scheme updated and lock released.")
             st.rerun()
 
-# Prompt generation
-missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k not in ("scheme_id", "tags")]
+# Prompt generation with dynamic required fields
+required_fields = ["objective", "eligibility", "key_benefits", "how_to_apply", "required_documents"]
+missing_keys = [k for k in required_fields if not scheme.get(k)]
+missing_keys += ["category", "sources"]  # always include these
 
-scheme_copy = scheme.copy()
-scheme_copy.pop("_id", None)
-scheme_copy.pop("tags", None)
+st.subheader("🔍 Missing Fields Info")
+if missing_keys:
+    st.info(f"Missing fields: {', '.join(missing_keys)}")
+else:
+    st.success("All key fields are filled ✅")
+
+scheme_copy = {k: v for k, v in scheme.items() if k != "_id" and k != "tags"}
 
 prompt = f'''
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
 
 Instructions:
-- For each required field (`objective`, `eligibility`, `key_benefits`, `how_to_apply`, `category`, `required_documents`), return a separate block with only that field filled.
+- For each required field ({', '.join(f'`{k}`' for k in missing_keys)}), return a separate block with only that field filled.
 - Do not include the `tags` field.
-- After providing all the individual JSON blocks, provide a single JSON block at the end with:
-  - `category`: A list of 1 or more categories chosen from a predefined list.
-  - `sources`: All official sources used for reference.
+- After providing all the individual JSON blocks, provide a single block at the end with:
+   - `category`: A list of 1 or more categories chosen **only** from this list:
+    ["Business & Industry", "Employment & Livelihood", "Education & Training", "Women Empowerment", "Minority & Social Welfare", "Health & Insurance", "Environment & Energy", "Research & Innovation", "Infrastructure", "Agriculture & Allied Sectors", "Technology & Digital Economy", "Marketing & Trade", "Skill Development", "Rural Development", "Subsidy", "Grant", "Loan", "Interest Subvention", "Reimbursement", "Incentive", "Seed Capital", "Guarantee Scheme", "Capital Investment Support", "Tax Exemption", "Skill Training", "Incubation", "Infrastructure Support", "Marketing Support", "Patent/Certification Reimbursement", "MSME", "SC/ST", "Minorities", "Women Entrepreneurs", "First-Generation Entrepreneurs", "Startups", "Youth", "Farmers/FPOs", "Handicraft/Artisan Groups", "Rural Enterprises", "Textiles", "Food Processing", "Poultry", "Dairy", "Handlooms & Khadi", "Electronics", "Automobile/EV", "IT/ITES", "Coir Sector", "Logistics", "Export Promotion", "E-waste", "Clean Energy", "Innovation", "Agri-Tech", "Retail & Distribution", "Manufacturing", "Traditional Industries", "Research Institutions"]
+
+   - `sources`: All official sources used for reference.
 
 Rules:
 - Use only official Indian government sources (e.g., ministry portals, india.gov.in, mygov.in, PIB).
@@ -207,6 +215,7 @@ Here is the scheme to process:
 
 {json.dumps(scheme_copy, indent=2, ensure_ascii=False)}
 '''.strip()
+
 
 
 st.subheader("🤖 Copy Final Prompt + Scheme")
