@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 import streamlit.components.v1 as components
 from pymongo import MongoClient
-from pymongo.errors import DuplicateKeyError
+from pymongo.errors import BulkWriteError
 
 # Read MongoDB URL from secrets
 mongo_uri = st.secrets["mongo_uri"]
@@ -42,9 +42,29 @@ if schemes_coll.estimated_document_count() == 0:
     if data_file.exists():
         with open(data_file, "r", encoding="utf-8") as f:
             json_schemes = json.load(f)
-        schemes_coll.insert_many(json_schemes)
-        st.success("✅ Data seeded from definitely_final.json to MongoDB.")
-        st.rerun()
+
+        # Remove duplicate documents based on scheme_id
+        existing_ids = set(doc["scheme_id"] for doc in schemes_coll.find({}, {"scheme_id": 1}))
+        unique_docs = []
+        duplicate_ids = []
+        for doc in json_schemes:
+            doc.pop("_id", None)
+            if doc["scheme_id"] not in existing_ids:
+                existing_ids.add(doc["scheme_id"])
+                unique_docs.append(doc)
+            else:
+                duplicate_ids.append(doc["scheme_id"])
+
+        try:
+            if unique_docs:
+                schemes_coll.insert_many(unique_docs)
+                st.success(f"✅ Inserted {len(unique_docs)} unique schemes into MongoDB.")
+            if duplicate_ids:
+                st.warning(f"⚠️ Skipped {len(duplicate_ids)} duplicates: {', '.join(duplicate_ids)}")
+            st.rerun()
+        except BulkWriteError as bwe:
+            st.error(f"MongoDB BulkWriteError: {bwe.details}")
+            st.stop()
     else:
         st.error("Scheme data file not found, and MongoDB is empty!")
         st.stop()
@@ -137,8 +157,6 @@ with st.form("edit_form"):
             st.success("✅ Scheme updated and lock released.")
             st.rerun()
 
-# Missing fields prompt generator
-# Prompt generation
 # Prompt generation
 missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k not in ("scheme_id", "tags")]
 
