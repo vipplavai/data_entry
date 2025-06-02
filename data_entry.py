@@ -192,7 +192,9 @@ components.html(f"""
 """, height=140)
 
 st.subheader("🔍 Fields with Missing Information")
-if missing_keys:
-    st.warning(f"Missing fields: {', '.join(missing_keys)}")
+display_missing = [k for k in missing_keys if k != "category"]  # show actual missing only
+if display_missing:
+    st.warning(f"Missing fields: {', '.join(display_missing)}")
 else:
     st.success("All fields are filled ✅")
+
