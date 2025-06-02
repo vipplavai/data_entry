@@ -40,14 +40,12 @@ st.markdown(
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       }
 
-      /* ==== New: Force all text inputs & text areas to have white background + border ==== */
-        textarea, .stTextArea textarea {
-            background-color: #FFFFFF !important;
-            border: 1px solid #ccc !important;
-            border-radius: 4px !important;
-            width: 100% !important;             /* ensure full width */
-    }
-
+      /* ==== Force all text inputs & text areas to have white background + border ==== */
+      textarea, .stTextArea textarea {
+          background-color: #FFFFFF !important;
+          border: 1px solid #ccc !important;
+          border-radius: 4px !important;
+      }
       .stTextInput > div > input {
           background-color: #FFFFFF !important;
           border: 1px solid #ccc !important;
@@ -59,7 +57,7 @@ st.markdown(
           border-radius: 4px !important;
       }
 
-      /* ==== New: Define a key-value wrapper with a light border ==== */
+      /* ==== Key-value wrapper with a light border ==== */
       .key-value-box {
           border: 1px solid #E0E0E0;
           border-radius: 6px;
@@ -68,7 +66,7 @@ st.markdown(
           background-color: #FFFFFF;
       }
 
-      /* ==== New: Prevent expander header label from stacking vertically ==== */
+      /* ==== Prevent expander header label from stacking vertically ==== */
       .streamlit-expanderHeader {
           flex-direction: row !important;
       }
@@ -76,6 +74,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 st.sidebar.subheader("👤 Enter Your Name")
@@ -303,11 +302,9 @@ with st.form("edit_form"):
         st.markdown("</div>", unsafe_allow_html=True)
 
 
-        # Put these in an expander to save space
+        # --- Wrap the entire Eligibility expander in a white-bordered box ---
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         with st.expander("► Eligibility Criteria"):
-    # --- Wrap the textarea in a white-bordered box ---
-            st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
-
             existing = "\n".join(scheme.get("eligibility", []))
             lines = st.text_area(
                 label="Eligibility Criteria",
@@ -316,14 +313,11 @@ with st.form("edit_form"):
                 help="Enter each eligibility criterion on its own line."
             )
             scheme["eligibility"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+        st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown("</div>", unsafe_allow_html=True)
-
-
+        # --- Wrap the entire Assistance expander in a white-bordered box ---
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         with st.expander("► Assistance Details"):
-    # --- Wrap the textarea in a white-bordered box ---
-            st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
-
             existing = "\n".join(scheme.get("assistance", []))
             lines = st.text_area(
                 label="Assistance Details",
@@ -332,8 +326,8 @@ with st.form("edit_form"):
                 help="List each assistance point on its own line."
             )
             scheme["assistance"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+        st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown("</div>", unsafe_allow_html=True)
 
 
 
