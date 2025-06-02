@@ -32,17 +32,49 @@ st.markdown(
       .stApp {
           background-color: #F0F2F6;
       }
-      /* Make containers and forms stand out with a white card-like background */
-      .css-1d391kg {  /* .css-1d391kg is the class for the main block container (may vary slightly by version) */
+      /* Make the main container card-like */
+      .css-1d391kg {
           background-color: #FFFFFF;
           border-radius: 12px;
           padding: 1.5rem;
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       }
+
+      /* ==== New: Force all text inputs & text areas to have white background + border ==== */
+      textarea, .stTextArea textarea {
+          background-color: #FFFFFF !important;
+          border: 1px solid #ccc !important;
+          border-radius: 4px !important;
+      }
+      .stTextInput > div > input {
+          background-color: #FFFFFF !important;
+          border: 1px solid #ccc !important;
+          border-radius: 4px !important;
+      }
+      .stSelectbox > div > * {
+          background-color: #FFFFFF !important;
+          border: 1px solid #ccc !important;
+          border-radius: 4px !important;
+      }
+
+      /* ==== New: Define a key-value wrapper with a light border ==== */
+      .key-value-box {
+          border: 1px solid #E0E0E0;
+          border-radius: 6px;
+          padding: 0.75rem;
+          margin-bottom: 0.75rem;
+          background-color: #FFFFFF;
+      }
+
+      /* ==== New: Prevent expander header label from stacking vertically ==== */
+      .streamlit-expanderHeader {
+          flex-direction: row !important;
+      }
     </style>
     """,
     unsafe_allow_html=True
 )
+
 
 st.sidebar.subheader("👤 Enter Your Name")
 current_user = st.sidebar.text_input("Your full name", "")
@@ -194,55 +226,80 @@ with st.form("edit_form"):
     # --- Top row: one‐line fields ---
     gen_col1, gen_col2 = st.columns(2)
     with gen_col1:
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         scheme["scheme_id"] = st.text_input(
             label="Scheme ID",
             value=scheme.get("scheme_id", ""),
             disabled=not is_new,
             help="Unique identifier (cannot be edited if already exists)."
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         scheme["jurisdiction"] = st.text_input(
             label="Jurisdiction",
             value=scheme.get("jurisdiction", ""),
             help="Geographic or administrative jurisdiction."
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         scheme["scheme_name"] = st.text_input(
             label="Scheme Name",
             value=scheme.get("scheme_name", ""),
             help="Official scheme title."
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
     with gen_col2:
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         scheme["category"] = st.text_input(
             label="Category",
             value=scheme.get("category", ""),
             help="Comma‐separated categories (up to 6)."
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         scheme["status"] = st.selectbox(
             label="Status",
             options=["Active", "Inactive", "Pending", ""],
-            index=(["Active", "Inactive", "Pending", ""].index(scheme.get("status", "")) if scheme.get("status", "") in ["Active","Inactive","Pending"] else 3),
+            index=(["Active", "Inactive", "Pending", ""].index(scheme.get("status", "")) 
+                if scheme.get("status", "") in ["Active","Inactive","Pending"] else 3),
             help="Current status of the scheme."
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         scheme["ministry"] = st.text_input(
             label="Ministry",
             value=scheme.get("ministry", ""),
             help="Overseeing government ministry."
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
     # --- Tabs for the longer text / lists ---
     tab_general, tab_details = st.tabs(["General Info", "Core Details"])
 
     with tab_general:
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         scheme["target_group"] = st.text_input(
             label="Target Group",
             value=scheme.get("target_group", ""),
             help="Who is eligible (e.g., Women Entrepreneurs, MSMEs)."
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         scheme["objective"] = st.text_area(
             label="Objective",
             value=scheme.get("objective", ""),
             height=120,
             help="Purpose of the scheme (use bullet points if needed)."
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
         # Put these in an expander to save space
         with st.expander("► Eligibility Criteria"):
@@ -257,34 +314,54 @@ with st.form("edit_form"):
 
     with tab_details:
         with st.expander("► Key Benefits"):
+            st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
             scheme["key_benefits"] = st.text_area(
                 label="Key Benefits",
                 value=scheme.get("key_benefits", ""),
                 height=120,
                 help="List key advantages (one bullet per line)."
             )
+            st.markdown("</div>", unsafe_allow_html=True)
+
         with st.expander("► How to Apply"):
+            st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
             scheme["how_to_apply"] = st.text_area(
                 label="How to Apply",
                 value=scheme.get("how_to_apply", ""),
                 height=120,
                 help="Steps for application process."
             )
-        with st.expander("► Required Documents"):
-            existing = "\n".join(scheme.get("required_documents", []))
-            lines = st.text_area("required_documents", existing, height=120)
-            scheme["required_documents"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+            st.markdown("</div>", unsafe_allow_html=True)
 
+        with st.expander("► Required Documents"):
+            st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
+            existing = "\n".join(scheme.get("required_documents", []))
+            lines = st.text_area(
+                label="Required Documents",
+                value=existing,
+                height=120,
+                help="Enter each required document on its own line."
+            )
+            scheme["required_documents"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
+            st.markdown("</div>", unsafe_allow_html=True)
+
+
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         scheme["tags"] = st.text_input(
             label="Tags",
             value=scheme.get("tags", ""),
             help="Any comma‐separated tags for search‐filtering."
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
         scheme["sources"] = st.text_input(
             label="Sources (comma‐separated URLs)",
             value=scheme.get("sources", ""),
             help="Official reference URLs (e.g., gov.in, mygov.in)."
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
     # --- Save / Cancel Buttons at the bottom ---
     save_col, cancel_col = st.columns([1, 1])
