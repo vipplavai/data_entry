@@ -164,7 +164,7 @@ Instructions:
 - For each required field ({', '.join(f'`{k}`' for k in missing_keys)}), return a separate JSON block with only that field filled.
 - Do not include the `tags` field.
 - After providing all the individual JSON blocks, provide a single JSON block at the end with:
-  - `category`: A list of 1 or more categories chosen from the following list:
+  - `category`: A list of **up to 5 categories** (never more) chosen from the following list:
     {json.dumps(categories_list, indent=2)}
   - `sources`: All official sources used for reference.
 
