@@ -168,8 +168,9 @@ with st.form("edit_form"):
             st.rerun()
 
 # Prompt generation with dynamic required fields
-required_fields = ["objective", "eligibility", "key_benefits", "how_to_apply", "required_documents"]
-missing_keys = [k for k in required_fields if not scheme.get(k)]
+required_fields = ["objective", "eligibility", "key_benefits", "how_to_apply", "required_documents", "category", "sources"]
+missing_keys = [k for k in required_fields if scheme.get(k) in (None, "", [], {})]
+
 # missing_keys += ["category", "sources"]  # always include these
 
 st.subheader("🔍 Missing Fields Info")
@@ -187,9 +188,11 @@ Instructions:
 - For each required field ({', '.join(f'`{k}`' for k in missing_keys)}), return a separate block with only that field filled.
 - Do not include the `tags` field.
 - For Category and sources:
-   - `category`: A list of 1 or more categories (maximum 6) chosen **only** from this list:
-    ["Business & Industry", "Employment & Livelihood", "Education & Training", "Women Empowerment", "Minority & Social Welfare", "Health & Insurance", "Environment & Energy", "Research & Innovation", "Infrastructure", "Agriculture & Allied Sectors", "Technology & Digital Economy", "Marketing & Trade", "Skill Development", "Rural Development", "Subsidy", "Grant", "Loan", "Interest Subvention", "Reimbursement", "Incentive", "Seed Capital", "Guarantee Scheme", "Capital Investment Support", "Tax Exemption", "Skill Training", "Incubation", "Infrastructure Support", "Marketing Support", "Patent/Certification Reimbursement", "MSME", "SC/ST", "Minorities", "Women Entrepreneurs", "First-Generation Entrepreneurs", "Startups", "Youth", "Farmers/FPOs", "Handicraft/Artisan Groups", "Rural Enterprises", "Textiles", "Food Processing", "Poultry", "Dairy", "Handlooms & Khadi", "Electronics", "Automobile/EV", "IT/ITES", "Coir Sector", "Logistics", "Export Promotion", "E-waste", "Clean Energy", "Innovation", "Agri-Tech", "Retail & Distribution", "Manufacturing", "Traditional Industries", "Research Institutions"]
-
+    - `category`: A list of 1 or more categories (maximum 6) chosen **only** from this list:
+        ["Business & Industry", "Employment & Livelihood", "Education & Training", "Women Empowerment", "Minority & Social Welfare", "Health & Insurance", "Environment & Energy", "Research & Innovation", "Infrastructure", "Agriculture & Allied Sectors", "Technology & Digital Economy", "Marketing & Trade", "Skill Development", "Rural Development", "Subsidy", "Grant", "Loan", "Interest Subvention", "Reimbursement", "Incentive", "Seed Capital", "Guarantee Scheme", "Capital Investment Support", "Tax Exemption", "Skill Training", "Incubation", "Infrastructure Support", "Marketing Support", "Patent/Certification Reimbursement", "MSME", "SC/ST", "Minorities", "Women Entrepreneurs", "First-Generation Entrepreneurs", "Startups", "Youth", "Farmers/FPOs", "Handicraft/Artisan Groups", "Rural Enterprises", "Textiles", "Food Processing", "Poultry", "Dairy", "Handlooms & Khadi", "Electronics", "Automobile/EV", "IT/ITES", "Coir Sector", "Logistics", "Export Promotion", "E-waste", "Clean Energy", "Innovation", "Agri-Tech", "Retail & Distribution", "Manufacturing", "Traditional Industries", "Research Institutions"]
+    - If the category is already present, check and validate if the category value is valid or not.,
+        If invalid or empty, update the category with the right values,
+        If valid, check and add additional categories if necessary.
    - `sources`: All official sources used for reference.
 
 Rules:
