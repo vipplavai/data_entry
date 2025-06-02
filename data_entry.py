@@ -170,40 +170,44 @@ with st.form("edit_form"):
 # Prompt generation
 missing_keys = [k for k, v in scheme.items() if v in (None, [], "") and k not in ("scheme_id", "tags")]
 
-prompt = f'''
+scheme_copy = scheme.copy()
+scheme_copy.pop("_id", None)
+scheme_copy.pop("tags", None)
+
+full_prompt = f'''
 You are assisting in curating structured and verified data for an Indian government scheme chatbot.
 
-Scheme Details:
-- scheme_id: "{scheme.get("scheme_id", "")}"
-- scheme_name: "{scheme.get("scheme_name", "")}"
-
 Instructions:
-- For each required field (`objective`, `eligibility`, `key_benefits`, `how_to_apply`,`category`, `required_documents`), return a separate JSON block with only that field filled.
-- Do not include the `sources` field in the individual JSON blocks.
-- After providing all the individual JSON blocks, provide a single JSON block at the end with the `sources` field listing all official URLs or PDF titles used for the entire scheme.
-- Use only official Indian government sources (e.g., ministry portals, india.gov.in, mygov.in, PIB, or official PDF guidelines).
-- Be as detailed and specific as possible for each key. Use bullet points where helpful.
-- Do not include or generate the `tags` field.
-- Do not hallucinate or guess. Leave a field blank if no official info is found.
-- Output only the JSON blocks as specified, nothing else.
+- For each required field (`objective`, `eligibility`, `key_benefits`, `how_to_apply`, `category`, `required_documents`), return a separate block with only that field filled.
+- Do not include the `tags` field.
+- After providing all the individual JSON blocks, provide a single JSON block at the end with:
+  - `category`: A list of 1 or more categories chosen from a predefined list.
+  - `sources`: All official sources used for reference.
+
+Rules:
+- Use only official Indian government sources (e.g., ministry portals, india.gov.in, mygov.in, PIB).
+- Be as detailed and specific as possible. Use bullet points where helpful.
+- Leave a field blank if no official info is found.
+- Output only the required blocks — no markdown, no explanation.
 
 Format for each field (example for `objective`):
 
-{{
   "objective": "• content\\n• more details"
-}}
 
 ...repeat for each field...
 
 At the end, provide:
 
-{{
-  "sources": [
+  "sources": 
     "https://official-source-1",
     "https://official-source-2"
-  ]
-}}
+  
+
+Here is the scheme to process:
+
+{json.dumps(scheme_copy, indent=2, ensure_ascii=False)}
 '''.strip()
+
 
 st.subheader("🤖 Copy Final Prompt + Scheme")
 components.html(f"""
