@@ -120,16 +120,7 @@ with st.sidebar.container():
         else:
             st.sidebar.info("Please type a scheme_id first.")
     # If the user hasn't searched yet, default to any existing session state
-    selected_id = st.session_state.get("selected_id", None)
-
-selected_id = None
-if search_id:
-    matching = next((sid for sid in scheme_ids if sid.lower() == search_id), None)
-    if matching:
-        selected_id = matching
-    else:
-        st.warning("No exact match found for scheme ID.")
-        st.stop()
+selected_id = st.session_state.get("selected_id", None)
 
 
 if "new_scheme" in st.session_state:
