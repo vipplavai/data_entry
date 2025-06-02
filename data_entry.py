@@ -69,17 +69,25 @@ if schemes_coll.estimated_document_count() == 0:
         st.error("Scheme data file not found, and MongoDB is empty!")
         st.stop()
 
-schemes_cursor = schemes_coll.find({})
-all_schemes = list(schemes_cursor)
-scheme_ids = [doc["scheme_id"] for doc in all_schemes]
-if not scheme_ids:
-    st.error("No schemes available in the database.")
-    st.stop()
+scheme_ids = [doc["scheme_id"] for doc in schemes_coll.find({}, {"scheme_id": 1})]
 
-selected_id = st.selectbox("Select Scheme ID", scheme_ids)
+search_id = st.text_input("🔍 Search Scheme ID").strip().lower()
+matching_ids = [sid for sid in scheme_ids if search_id in sid.lower()] if search_id else []
+
+if matching_ids:
+    selected_id = st.selectbox("Select Matching Scheme", matching_ids)
+else:
+    if search_id:
+        st.warning("No matching scheme IDs found.")
+    selected_id = None
+
 if "new_scheme" in st.session_state:
     if selected_id != st.session_state["new_scheme"].get("scheme_id", ""):
         del st.session_state["new_scheme"]
+
+if not selected_id:
+    st.stop()
+
 
 col1, col2 = st.columns(2)
 with col1:
