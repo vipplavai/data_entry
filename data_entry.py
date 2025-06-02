@@ -170,7 +170,7 @@ with st.form("edit_form"):
 # Prompt generation with dynamic required fields
 required_fields = ["objective", "eligibility", "key_benefits", "how_to_apply", "required_documents"]
 missing_keys = [k for k in required_fields if not scheme.get(k)]
-missing_keys += ["category", "sources"]  # always include these
+# missing_keys += ["category", "sources"]  # always include these
 
 st.subheader("🔍 Missing Fields Info")
 if missing_keys:
