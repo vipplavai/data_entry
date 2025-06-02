@@ -25,6 +25,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 # --- Add this CSS block for a light, neutral background and modern container look ---
+# --- Replace your existing CSS block with this updated version ---
 st.markdown(
     """
     <style>
@@ -32,6 +33,7 @@ st.markdown(
       .stApp {
           background-color: #F0F2F6;
       }
+
       /* Make the main container card-like */
       .css-1d391kg {
           background-color: #FFFFFF;
@@ -40,25 +42,52 @@ st.markdown(
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       }
 
-      /* ==== Force all text inputs & text areas to have white background + border ==== */
-      textarea, .stTextArea textarea {
+
+      /* ==== Force all Streamlit text areas to fill their parent width ==== */
+      .stTextArea > div > textarea {
           background-color: #FFFFFF !important;
           border: 1px solid #ccc !important;
           border-radius: 4px !important;
+          width: 100% !important;
+          min-width: 100% !important;
+          box-sizing: border-box !important;
+          resize: vertical; /* allow vertical resizing only */
       }
+
+      /* Also style any “unstyled” <textarea> just in case */
+      textarea {
+          background-color: #FFFFFF !important;
+          border: 1px solid #ccc !important;
+          border-radius: 4px !important;
+          width: 100% !important;
+          min-width: 100% !important;
+          box-sizing: border-box !important;
+      }
+
+      /* Streamlit text inputs (single line) */
       .stTextInput > div > input {
           background-color: #FFFFFF !important;
           border: 1px solid #ccc !important;
           border-radius: 4px !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
       }
+
+      /* Streamlit select boxes */
       .stSelectbox > div > * {
           background-color: #FFFFFF !important;
           border: 1px solid #ccc !important;
           border-radius: 4px !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
       }
 
-      /* ==== Key-value wrapper with a light border ==== */
+
+      /* ==== Key-value wrapper as a full-width, white box with light border ==== */
       .key-value-box {
+          display: block !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
           border: 1px solid #E0E0E0;
           border-radius: 6px;
           padding: 0.75rem;
@@ -67,7 +96,8 @@ st.markdown(
       }
 
       /* ==== Prevent expander header label from stacking vertically ==== */
-      .streamlit-expanderHeader {
+      /* As of Streamlit mid-2025, the class for the header is stExpanderHeader */
+      .stExpanderHeader, .streamlit-expanderHeader {
           flex-direction: row !important;
       }
     </style>
@@ -302,31 +332,43 @@ with st.form("edit_form"):
         st.markdown("</div>", unsafe_allow_html=True)
 
 
-        # --- Wrap the entire Eligibility expander in a white-bordered box ---
-        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
+        # --- Wrap ONLY the textarea inside the Eligibility expander ---
         with st.expander("► Eligibility Criteria"):
             existing = "\n".join(scheme.get("eligibility", []))
+
+            # open the white‐background box
+            st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
             lines = st.text_area(
                 label="Eligibility Criteria",
                 value=existing,
-                height=120,
-                help="Enter each eligibility criterion on its own line."
+                height=200,
+                help="Enter each eligibility criterion on its own line.",
+                key="eligibility_area"
             )
             scheme["eligibility"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
-        st.markdown("</div>", unsafe_allow_html=True)
 
-        # --- Wrap the entire Assistance expander in a white-bordered box ---
-        st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
+            # close the white‐background box
+            st.markdown("</div>", unsafe_allow_html=True)
+
+
+        # --- Wrap ONLY the textarea inside the Assistance expander ---
         with st.expander("► Assistance Details"):
             existing = "\n".join(scheme.get("assistance", []))
+
+            # open the white‐background box
+            st.markdown("<div class='key-value-box'>", unsafe_allow_html=True)
             lines = st.text_area(
                 label="Assistance Details",
                 value=existing,
-                height=120,
-                help="List each assistance point on its own line."
+                height=200,
+                help="List each assistance point on its own line.",
+                key="assistance_area"
             )
             scheme["assistance"] = [ln.strip() for ln in lines.splitlines() if ln.strip()]
-        st.markdown("</div>", unsafe_allow_html=True)
+
+            # close the white‐background box
+            st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
