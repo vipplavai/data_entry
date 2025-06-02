@@ -14,27 +14,6 @@ schemes_coll = db["schemes"]
 locks_coll = db["locks"]
 logs_coll = db["user_logs"]
 
-st.sidebar.subheader("👤 Enter Your Name")
-current_user = st.sidebar.text_input("Your full name", "")
-if not current_user:
-    st.sidebar.warning("Please type your name before proceeding.")
-    st.stop()
-
-def acquire_lock(scheme_id: str, user: str) -> bool:
-    now = datetime.utcnow()
-    lock_doc = locks_coll.find_one({"scheme_id": scheme_id})
-    if lock_doc:
-        if (now - lock_doc["locked_at"]).total_seconds() > 300:
-            locks_coll.replace_one({"scheme_id": scheme_id}, {"scheme_id": scheme_id, "locked_by": user, "locked_at": now})
-            return True
-        if lock_doc["locked_by"] == user:
-            locks_coll.update_one({"scheme_id": scheme_id}, {"$set": {"locked_at": now}})
-            return True
-        return False
-    else:
-        locks_coll.insert_one({"scheme_id": scheme_id, "locked_by": user, "locked_at": now})
-        return True
-
 # Page configuration and styled header
 st.set_page_config(
     page_title="MSME Scheme Editor",
@@ -64,6 +43,29 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+st.sidebar.subheader("👤 Enter Your Name")
+current_user = st.sidebar.text_input("Your full name", "")
+if not current_user:
+    st.sidebar.warning("Please type your name before proceeding.")
+    st.stop()
+
+def acquire_lock(scheme_id: str, user: str) -> bool:
+    now = datetime.utcnow()
+    lock_doc = locks_coll.find_one({"scheme_id": scheme_id})
+    if lock_doc:
+        if (now - lock_doc["locked_at"]).total_seconds() > 300:
+            locks_coll.replace_one({"scheme_id": scheme_id}, {"scheme_id": scheme_id, "locked_by": user, "locked_at": now})
+            return True
+        if lock_doc["locked_by"] == user:
+            locks_coll.update_one({"scheme_id": scheme_id}, {"$set": {"locked_at": now}})
+            return True
+        return False
+    else:
+        locks_coll.insert_one({"scheme_id": scheme_id, "locked_by": user, "locked_at": now})
+        return True
+
+
 
 data_file = Path("F_sources_updated.json")
 if schemes_coll.estimated_document_count() == 0:
