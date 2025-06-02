@@ -42,6 +42,8 @@ if schemes_coll.estimated_document_count() == 0:
     if data_file.exists():
         with open(data_file, "r", encoding="utf-8") as f:
             json_schemes = json.load(f)
+        for doc in json_schemes:
+            doc.pop("_id", None)  # Remove _id if present
         schemes_coll.insert_many(json_schemes)
         st.success("✅ Data seeded from definitely_final.json to MongoDB.")
         st.rerun()
