@@ -5,6 +5,8 @@ from datetime import datetime
 import streamlit.components.v1 as components
 from pymongo import MongoClient
 from pymongo.errors import BulkWriteError
+from datetime import datetime, timezone
+
 
 # Read MongoDB URL from secrets
 mongo_uri = st.secrets["mongo_uri"]
@@ -21,7 +23,7 @@ if not current_user:
     st.stop()
 
 def acquire_lock(scheme_id: str, user: str) -> bool:
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     lock_doc = locks_coll.find_one({"scheme_id": scheme_id})
     if lock_doc:
         if (now - lock_doc["locked_at"]).total_seconds() > 300:
@@ -134,27 +136,67 @@ if not is_new:
     else:
         st.info("ℹ️ This scheme has never been edited yet.")
 
+import json
+import streamlit as st
+from datetime import datetime
+from pymongo import MongoClient
+from pymongo.errors import BulkWriteError
+
+# … (your existing setup, lock logic, etc.) …
+
 with st.form("edit_form"):
-    scheme["scheme_id"] = st.text_input("scheme_id", scheme.get("scheme_id", ""), disabled=not is_new)
-    for key, value in scheme.items():
+    scheme["scheme_id"] = st.text_input(
+        "scheme_id", scheme.get("scheme_id", ""), disabled=not is_new
+    )
+
+    # Define which fields we consider “large text”
+    large_text_fields = [
+        "objective", "eligibility", "assistance", "key_benefits",
+        "how_to_apply", "required_documents", "sources"
+    ]
+
+    for key, value in list(scheme.items()):
         if key == "scheme_id":
             continue
 
-        large_text_fields = ["objective", "eligibility", "assistance", "key_benefits", "how_to_apply", "required_documents","sources"]
-
+        # 1) If this value is a list … check its element‐type:
         if isinstance(value, list):
-            lines = "\n".join(value)
-            height = 250 if key in large_text_fields else 100
-            lines = st.text_area(key, lines, height=height)
-            scheme[key] = [line.strip() for line in lines.splitlines() if line.strip()]
+            # 1a) If it’s a list of dicts (e.g. “assistance”):
+            if len(value) > 0 and isinstance(value[0], dict):
+                # Render the entire list-of-dicts as pretty‐printed JSON
+                raw_json = json.dumps(value, ensure_ascii=False, indent=2)
+                edited = st.text_area(
+                    key,
+                    raw_json,
+                    height=250  # JSON blobs can be tall
+                )
+                # Try to parse it back—show an error if invalid
+                try:
+                    scheme[key] = json.loads(edited)
+                except json.JSONDecodeError:
+                    st.error(f"Invalid JSON for field '{key}'. Please correct it before saving.")
+                    # Keep the old value so we don’t break everything
+                    scheme[key] = value
+
+            # 1b) Otherwise it’s a list of strings (e.g. “required_documents” or “sources”):
+            else:
+                # Join into newline‐separated text so user can edit one item per line
+                joined = "\n".join(value)
+                height = 250 if key in large_text_fields else 100
+                edited = st.text_area(key, joined, height=height)
+                # Re-split on lines, stripping out any empty lines
+                scheme[key] = [line.strip() for line in edited.splitlines() if line.strip()]
+
+        # 2) If it’s not a list at all, assume it’s a string (or None)
         else:
             height = 250 if key in large_text_fields else 100
             scheme[key] = st.text_area(key, value or "", height=height)
 
-
+    # … (rest of your form‐submit logic unchanged) …
     if st.form_submit_button("💾 Save Changes"):
         scheme["last_modified_by"] = current_user
         scheme["last_modified_at"] = datetime.utcnow()
+
         if is_new:
             if not scheme["scheme_id"]:
                 st.error("⚠️ scheme_id cannot be blank.")
@@ -162,7 +204,12 @@ with st.form("edit_form"):
                 st.error("⚠️ That scheme_id already exists. Choose a different one.")
             else:
                 schemes_coll.insert_one(scheme)
-                logs_coll.insert_one({"scheme_id": scheme["scheme_id"], "user": current_user, "action": "created", "timestamp": datetime.utcnow()})
+                logs_coll.insert_one({
+                    "scheme_id": scheme["scheme_id"],
+                    "user": current_user,
+                    "action": "created",
+                    "timestamp": datetime.utcnow()
+                })
                 del st.session_state["new_scheme"]
                 st.success(f"✅ Scheme '{scheme['scheme_id']}' added.")
                 st.rerun()
@@ -170,9 +217,15 @@ with st.form("edit_form"):
             scheme.pop("_id", None)
             schemes_coll.replace_one({"scheme_id": selected_id}, scheme)
             locks_coll.delete_one({"scheme_id": selected_id})
-            logs_coll.insert_one({"scheme_id": selected_id, "user": current_user, "action": "edited", "timestamp": datetime.utcnow()})
+            logs_coll.insert_one({
+                "scheme_id": selected_id,
+                "user": current_user,
+                "action": "edited",
+                "timestamp": datetime.utcnow()
+            })
             st.success("✅ Scheme updated and lock released.")
             st.rerun()
+
 
 # Prompt generation with dynamic required fields
 required_fields = ["objective", "eligibility", "key_benefits", "how_to_apply", "required_documents", "category", "sources"]
