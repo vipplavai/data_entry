@@ -22,20 +22,53 @@ if not current_user:
     st.sidebar.warning("Please type your name before proceeding.")
     st.stop()
 
+from datetime import datetime, timezone
+
 def acquire_lock(scheme_id: str, user: str) -> bool:
+    # Make "now" a timezone‐aware UTC datetime
     now = datetime.now(timezone.utc)
+
     lock_doc = locks_coll.find_one({"scheme_id": scheme_id})
     if lock_doc:
-        if (now - lock_doc["locked_at"]).total_seconds() > 300:
-            locks_coll.replace_one({"scheme_id": scheme_id}, {"scheme_id": scheme_id, "locked_by": user, "locked_at": now})
+        locked_at = lock_doc["locked_at"]
+
+        # If the stored value is naïve, assume it’s UTC and attach tzinfo accordingly.
+        if locked_at.tzinfo is None:
+            locked_at = locked_at.replace(tzinfo=timezone.utc)
+
+        # Now both 'now' and 'locked_at' are offset‐aware, so subtraction is safe:
+        if (now - locked_at).total_seconds() > 300:
+            # previous lock has “expired”: replace it with a fresh one
+            locks_coll.replace_one(
+                {"scheme_id": scheme_id},
+                {
+                    "scheme_id": scheme_id,
+                    "locked_by": user,
+                    "locked_at": now,
+                }
+            )
             return True
+
+        # If the same user held the lock, just bump its timestamp
         if lock_doc["locked_by"] == user:
-            locks_coll.update_one({"scheme_id": scheme_id}, {"$set": {"locked_at": now}})
+            locks_coll.update_one(
+                {"scheme_id": scheme_id},
+                {"$set": {"locked_at": now}}
+            )
             return True
+
+        # Someone else still holds a non‐expired lock
         return False
+
     else:
-        locks_coll.insert_one({"scheme_id": scheme_id, "locked_by": user, "locked_at": now})
+        # No existing lock: insert a new one with a timezone‐aware timestamp
+        locks_coll.insert_one({
+            "scheme_id": scheme_id,
+            "locked_by": user,
+            "locked_at": now
+        })
         return True
+
 
 # Title and initial DB check
 st.title("📋 MSME Scheme Editor Tool")
