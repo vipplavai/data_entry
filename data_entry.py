@@ -140,10 +140,10 @@ with st.form("edit_form"):
         if key == "scheme_id":
             continue
         if isinstance(value, list):
-            lines = st.text_area(key, "\n".join(value))
+            lines = st.text_area(key, "\n".join(value),height= 300)
             scheme[key] = [line.strip() for line in lines.splitlines() if line.strip()]
         else:
-            scheme[key] = st.text_area(key, value or "", height=100)
+            scheme[key] = st.text_area(key, value or "", height=300)
 
     if st.form_submit_button("💾 Save Changes"):
         scheme["last_modified_by"] = current_user
