@@ -140,7 +140,7 @@ with st.form("edit_form"):
         if key == "scheme_id":
             continue
 
-        large_text_fields = ["objective", "eligibility", "assistance", "key_benefits", "how_to_apply", "required_documents"]
+        large_text_fields = ["objective", "eligibility", "assistance", "key_benefits", "how_to_apply", "required_documents","sources"]
 
         if isinstance(value, list):
             lines = "\n".join(value)
