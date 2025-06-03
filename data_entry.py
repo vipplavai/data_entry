@@ -207,18 +207,6 @@ Rules:
 - Be as detailed and specific as possible. Use bullet points where helpful.
 - Leave a field blank if no official info is found.
 - Output only the required blocks — no markdown, no explanation.
-
-Format for each field (example for `objective`):
-
-  "objective": "• content\\n• more details"
-
-...repeat for each field...
-
-At the end, provide:
-
-  "sources": 
-    "https://official-source-1",
-    "https://official-source-2"
   
 
 Here is the scheme to process:
