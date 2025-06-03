@@ -139,11 +139,18 @@ with st.form("edit_form"):
     for key, value in scheme.items():
         if key == "scheme_id":
             continue
+
+        large_text_fields = ["objective", "eligibility", "assistance", "key_benefits", "how_to_apply", "required_documents"]
+
         if isinstance(value, list):
-            lines = st.text_area(key, "\n".join(value),height= 300)
+            lines = "\n".join(value)
+            height = 250 if key in large_text_fields else 100
+            lines = st.text_area(key, lines, height=height)
             scheme[key] = [line.strip() for line in lines.splitlines() if line.strip()]
         else:
-            scheme[key] = st.text_area(key, value or "", height=300)
+            height = 250 if key in large_text_fields else 100
+            scheme[key] = st.text_area(key, value or "", height=height)
+
 
     if st.form_submit_button("💾 Save Changes"):
         scheme["last_modified_by"] = current_user
